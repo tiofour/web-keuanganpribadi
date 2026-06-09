@@ -5,7 +5,11 @@ const formatTanggalInput = (str) => new Date(str).toISOString().split('T')[0];
 let aliranChart;
 
 // Fungsi khusus untuk mengecek Auth. Jika error 403, lempar ke login
+// Ubah fungsi ini di dalam public/app.js
 async function safeFetch(url, options = {}) {
+    // Baris baru: Wajibkan browser membawa cookie sesi
+    options.credentials = 'same-origin'; 
+
     const response = await fetch(url, options);
     if (response.status === 403) {
         window.location.href = '/login.html';

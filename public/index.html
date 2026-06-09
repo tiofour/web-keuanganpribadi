@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Keuangan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#f97316', // Oranye
+                        'secondary': '#1e293b', // Biru Tua
+                        'green-accent': '#10b981', 
+                        'red-accent': '#ef4444' 
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans p-6 md:p-10">
+
+    <div class="max-w-[1400px] mx-auto space-y-8">
+        
+        <header>
+            <h1 class="text-3xl font-extrabold text-secondary">Artaku</h1>
+            <p class="text-gray-500">Berikut adalah ringkasan keuangan Anda.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-7 rounded-3xl shadow-sm border border-gray-100">
+                <h3 class="text-gray-500 text-sm font-medium mb-2">Pemasukan</h3>
+                <p class="text-4xl font-extrabold text-secondary" id="dash-pemasukan">Rp 0</p>
+            </div>
+            <div class="bg-white p-7 rounded-3xl shadow-sm border border-gray-100">
+                <h3 class="text-gray-500 text-sm font-medium mb-2">Pengeluaran</h3>
+                <p class="text-4xl font-extrabold text-secondary" id="dash-pengeluaran">Rp 0</p>
+            </div>
+            <div class="bg-secondary p-7 rounded-3xl shadow-sm text-white">
+                <h3 class="text-gray-300 text-sm font-medium mb-2">Total Saldo</h3>
+                <p class="text-4xl font-extrabold" id="dash-saldo">Rp 0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-8">
+                
+                <div class="bg-white p-7 rounded-3xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-secondary mb-6">Analisis Aliran Tahunan</h2>
+                    <div class="h-[300px] w-full">
+                        <canvas id="aliranChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-7 rounded-3xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-secondary">Log Transaksi</h2>
+                        <select id="filter-tabel" class="bg-gray-50 border border-gray-200 text-sm rounded-full px-4 py-2 focus:outline-none focus:border-primary">
+                            <option value="semua">Semua Waktu</option>
+                            <option value="harian">Harian</option>
+                            <option value="mingguan">Mingguan</option>
+                            <option value="bulanan">Bulanan</option>
+                        </select>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="border-b border-gray-100">
+                                <tr>
+                                    <th class="p-4 font-semibold text-gray-500">Tanggal</th>
+                                    <th class="p-4 font-semibold text-gray-500">Keterangan</th>
+                                    <th class="p-4 font-semibold text-gray-500">Kategori</th>
+                                    <th class="p-4 font-semibold text-gray-500">Jumlah</th>
+                                    <th class="p-4"></th> 
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-transaksi">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-1 space-y-8">
+                <div class="bg-white p-7 rounded-3xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold text-secondary mb-6" id="form-title">Catat Transaksi</h2>
+                    
+                    <form id="form-transaksi" class="space-y-4">
+                        <input type="hidden" id="edit-id">
+                        
+                        <div>
+                            <select id="input-jenis" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:outline-none focus:border-primary" required>
+                                <option value="Pemasukan">Pemasukan (+)</option>
+                                <option value="Pengeluaran">Pengeluaran (-)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <input type="number" id="input-jumlah" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:outline-none focus:border-primary" placeholder="Jumlah (Contoh: 50000)" required>
+                        </div>
+                        <div>
+                            <input type="text" id="input-keterangan" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:outline-none focus:border-primary" placeholder="Keterangan transaksi" required>
+                        </div>
+                        <div>
+                            <input type="date" id="input-tanggal" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl focus:outline-none focus:border-primary cursor-pointer" required>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button type="submit" id="btn-simpan" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-opacity-90 transition">
+                                Simpan
+                            </button>
+                            <button type="button" id="btn-batal" class="hidden w-1/3 bg-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-300 transition">
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

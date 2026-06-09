@@ -2,22 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session); // Memanggil library baru
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware untuk membaca JSON dan menyajikan folder public
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Konfigurasi Session untuk sistem Login
-app.use(session({
-    secret: 'kunci-rahasia-tim-kita',
-    resave: false,
-    saveUninitialized: true
-}));
 
 // Konfigurasi Database ke Aiven Cloud
 const db = mysql.createPool({
@@ -27,18 +20,38 @@ const db = mysql.createPool({
     database: process.env.DB_NAME,
     port: process.env.DB_PORT
 });
+
 // ==========================================
-// ROUTING API PUBLIK (Tidak perlu login)
+// KONFIGURASI PENYIMPANAN SESI KE MYSQL (PENTING UNTUK VERCEL)
+// ==========================================
+const sessionStore = new MySQLStore({
+    clearExpired: true,
+    checkExpirationInterval: 900000, // Cek sesi kedaluwarsa setiap 15 menit
+    expiration: 86400000 // Sesi bertahan 1 hari (24 jam)
+}, db);
+
+app.use(session({
+    key: 'keuangan_session_cookie',
+    secret: 'kunci-rahasia-tim-kita',
+    store: sessionStore, // Data login sekarang disimpan di Aiven MySQL!
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 86400000 // 1 hari dalam milidetik
+    }
+}));
+
+// ==========================================
+// ROUTING API PUBLIK 
 // ==========================================
 
-// Endpoint untuk validasi Login
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     db.query("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         
         if (results.length > 0) {
-            req.session.user = username; // Menyimpan sesi pengguna
+            req.session.user = username; 
             res.json({ success: true, message: "Login Berhasil" });
         } else {
             res.status(401).json({ success: false, message: "Username atau password salah!" });
@@ -46,29 +59,24 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// Endpoint untuk Logout
 app.post('/api/logout', (req, res) => {
     req.session.destroy();
     res.json({ success: true });
 });
 
-// ==========================================
-// MIDDLEWARE PROTEKSI
-// ==========================================
-// Fungsi ini akan mengecek apakah user sudah login sebelum mengakses data
+// Middleware Proteksi
 const auth = (req, res, next) => {
     if (req.session.user) {
-        next(); // Lanjut jika sudah login
+        next();
     } else {
         res.status(403).json({ error: "Akses Ditolak. Harap Login Dahulu." });
     }
 };
 
 // ==========================================
-// ROUTING API PRIVAT (Wajib Login / auth)
+// ROUTING API PRIVAT (Wajib Login)
 // ==========================================
 
-// 1. Dashboard (Read)
 app.get('/api/dashboard', auth, (req, res) => {
     const query = "SELECT jenis, SUM(jumlah) as total FROM transaksi GROUP BY jenis";
     db.query(query, (err, results) => {
@@ -82,15 +90,10 @@ app.get('/api/dashboard', auth, (req, res) => {
             if (row.jenis === 'Pengeluaran') totalPengeluaran = Number(row.total);
         });
 
-        res.json({
-            pemasukan: totalPemasukan,
-            pengeluaran: totalPengeluaran,
-            saldo: totalPemasukan - totalPengeluaran
-        });
+        res.json({ pemasukan: totalPemasukan, pengeluaran: totalPengeluaran, saldo: totalPemasukan - totalPengeluaran });
     });
 });
 
-// 2. Tambah Transaksi (Create)
 app.post('/api/transaksi', auth, (req, res) => {
     const { jenis, jumlah, keterangan, tanggal } = req.body;
     const query = "INSERT INTO transaksi (jenis, jumlah, keterangan, tanggal) VALUES (?, ?, ?, ?)";
@@ -100,7 +103,6 @@ app.post('/api/transaksi', auth, (req, res) => {
     });
 });
 
-// 3. Ambil Transaksi & Filter (Read)
 app.get('/api/transaksi', auth, (req, res) => {
     const { filter } = req.query;
     let query = "SELECT * FROM transaksi";
@@ -117,7 +119,6 @@ app.get('/api/transaksi', auth, (req, res) => {
     });
 });
 
-// 4. Update Transaksi (Update)
 app.put('/api/transaksi/:id', auth, (req, res) => {
     const { id } = req.params;
     const { jenis, jumlah, keterangan, tanggal } = req.body;
@@ -128,7 +129,6 @@ app.put('/api/transaksi/:id', auth, (req, res) => {
     });
 });
 
-// 5. Hapus Transaksi (Delete)
 app.delete('/api/transaksi/:id', auth, (req, res) => {
     const { id } = req.params;
     const query = "DELETE FROM transaksi WHERE id = ?";
@@ -138,19 +138,12 @@ app.delete('/api/transaksi/:id', auth, (req, res) => {
     });
 });
 
-
-
 // ==========================================
 // KONFIGURASI KHUSUS VERCEL SERVERLESS
 // ==========================================
-
-// app.listen() tetap kita simpan agar kamu tetap bisa tes di komputer lokal (localhost)
-// Namun, di Vercel (production), kita mengekspor module app-nya
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`Server lokal berjalan di port ${PORT}`);
     });
 }
-
-// Baris ini WAJIB ada agar Vercel bisa menjalankan Express.js
 module.exports = app;

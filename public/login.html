@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Keuangan Pribadi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center h-screen font-sans">
+    <div class="bg-white p-8 rounded-3xl shadow-lg w-full max-w-sm border border-gray-100">
+        <h2 class="text-2xl font-extrabold text-slate-800 mb-2 text-center">Selamat Datang</h2>
+        <p class="text-sm text-gray-500 mb-8 text-center">Silakan masuk ke akun Anda</p>
+        
+        <form id="form-login" class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <input type="text" id="username" class="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Masukkan admin" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" id="password" class="w-full border border-gray-300 p-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" placeholder="Masukkan password123" required>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-md">
+                Masuk Dashboard
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Logika sederhana khusus untuk login
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value
+                })
+            });
+            const data = await res.json();
+            if(data.success) {
+                window.location.href = '/index.html';
+            } else {
+                alert(data.message);
+            }
+        });
+    </script>
+</body>
+</html>

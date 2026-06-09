@@ -1,19 +1,21 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Konfigurasi Database (Sesuaikan user/password jika perlu)
+// Konfigurasi Database ke Aiven Cloud
 const db = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'keuanganpribadi_db'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
 });
 
 // ==========================================
@@ -95,6 +97,17 @@ app.delete('/api/transaksi/:id', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server berjalan di http://localhost:${PORT}`);
-});
+// ==========================================
+// KONFIGURASI KHUSUS VERCEL SERVERLESS
+// ==========================================
+
+// app.listen() tetap kita simpan agar kamu tetap bisa tes di komputer lokal (localhost)
+// Namun, di Vercel (production), kita mengekspor module app-nya
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server lokal berjalan di port ${PORT}`);
+    });
+}
+
+// Baris ini WAJIB ada agar Vercel bisa menjalankan Express.js
+module.exports = app;

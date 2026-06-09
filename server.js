@@ -67,7 +67,7 @@ app.get('/api/transaksi', (req, res) => {
         query += " WHERE MONTH(tanggal) = MONTH(CURDATE()) AND YEAR(tanggal) = YEAR(CURDATE())";
     }
     
-    query += " ORDER BY tanggal DESC";
+    query += " ORDER BY created_at DESC";
 
     db.query(query, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });

@@ -111,7 +111,7 @@ app.get('/api/transaksi', auth, (req, res) => {
     else if (filter === 'mingguan') query += " WHERE YEARWEEK(tanggal, 1) = YEARWEEK(CURDATE(), 1)";
     else if (filter === 'bulanan') query += " WHERE MONTH(tanggal) = MONTH(CURDATE()) AND YEAR(tanggal) = YEAR(CURDATE())";
     
-    query += " ORDER BY tanggal DESC";
+    query += " ORDER BY created_at DESC";
 
     db.query(query, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
